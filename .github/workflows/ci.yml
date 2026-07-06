@@ -32,6 +32,8 @@ jobs:
         family: [x86-64]
         compiler: [gcc, clang]
         container:
+          - alpine:edge
+          - alpine:latest
           - archlinux:latest
           - debian:testing
           - debian:stable
@@ -40,9 +42,8 @@ jobs:
           # Fails on configure on GCC and clang (process restrictions?)
           # - fedora:rawhide
           - fedora:latest
-          - fedora:39
-          - fedora:38
-          - fedora:37
+          - ubuntu:latest
+          - ubuntu:noble
           - ubuntu:jammy
           - ubuntu:focal
           # On Ubuntu Bionic the Meson doesn't support feature options
@@ -52,17 +53,6 @@ jobs:
         cross_compile: [""]
         variant: [""]
         include:
-          # Alpine (OpenRC)
-          - container: "alpine:edge"
-            arch: x86-64
-            family: x86-64
-            compiler: gcc
-
-          - container: "alpine:latest"
-            arch: x86-64
-            family: x86-64
-            compiler: gcc
-
           # Debian 32-bit builds
           - container: "debian:testing"
             arch: i386
