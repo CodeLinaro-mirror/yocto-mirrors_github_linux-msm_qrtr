@@ -32,6 +32,8 @@ jobs:
         family: [x86-64]
         compiler: [gcc, clang]
         container:
+          - alpine:edge
+          - alpine:latest
           - archlinux:latest
           - debian:testing
           - debian:stable
@@ -40,9 +42,8 @@ jobs:
           # Fails on configure on GCC and clang (process restrictions?)
           # - fedora:rawhide
           - fedora:latest
-          - fedora:39
-          - fedora:38
-          - fedora:37
+          - ubuntu:latest
+          - ubuntu:noble
           - ubuntu:jammy
           - ubuntu:focal
           # On Ubuntu Bionic the Meson doesn't support feature options
@@ -52,17 +53,6 @@ jobs:
         cross_compile: [""]
         variant: [""]
         include:
-          # Alpine (OpenRC)
-          - container: "alpine:edge"
-            arch: x86-64
-            family: x86-64
-            compiler: gcc
-
-          - container: "alpine:latest"
-            arch: x86-64
-            family: x86-64
-            compiler: gcc
-
           # Debian 32-bit builds
           - container: "debian:testing"
             arch: i386
@@ -177,7 +167,7 @@ jobs:
         echo "PKG_CONFIG_PATH: $PKG_CONFIG_PATH"
 
     - name: Git checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v5
 
     - name: Install additional packages
       run: |
@@ -242,3 +232,47 @@ jobs:
 
     - name: Install
       run: ninja -C build install
+
+  android:
+    name: Android
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [arm64-v8a, armeabi-v7a, x86_64]
+
+    env:
+      NDK_VERSION: r27d
+      API: "24"
+      ABI: ${{ matrix.abi }}
+
+    steps:
+    - name: Git checkout
+      uses: actions/checkout@v5
+
+    - name: Install build tools
+      run: |
+        sudo apt update
+        sudo apt install -y --no-install-recommends meson ninja-build
+
+    - name: Cache Android NDK
+      id: ndk-cache
+      uses: actions/cache@v4
+      with:
+        path: android-ndk-${{ env.NDK_VERSION }}
+        key: ndk-${{ env.NDK_VERSION }}-linux
+
+    - name: Download Android NDK
+      if: steps.ndk-cache.outputs.cache-hit != 'true'
+      run: |
+        curl -sSLO https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip
+        unzip -q android-ndk-${NDK_VERSION}-linux.zip
+        rm android-ndk-${NDK_VERSION}-linux.zip
+
+    - name: Build for Android
+      run: |
+        export ANDROID_NDK="$GITHUB_WORKSPACE/android-ndk-${NDK_VERSION}"
+        ./ci/android.sh

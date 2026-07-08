@@ -17,6 +17,7 @@ case $CC in
 esac
 
 apk add \
+	build-base \
 	linux-headers \
 	meson \
 	musl-dev \
